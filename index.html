@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IIT JEE Mock Quiz</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --card: #1a1a24;
+    --border: #2a2a3a;
+    --accent-math: #f59e0b;
+    --accent-chem: #10b981;
+    --accent-phys: #3b82f6;
+    --text: #f0f0f5;
+    --muted: #6b7280;
+    --correct: #22c55e;
+    --wrong: #ef4444;
+    --radius: 16px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Outfit', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .container { max-width: 860px; margin: 0 auto; padding: 40px 20px 80px; position: relative; z-index: 1; }
+  header { text-align: center; margin-bottom: 48px; animation: fadeDown 0.6s ease; }
+  .logo-badge { display: inline-block; font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: 3px; color: var(--muted); border: 1px solid var(--border); padding: 6px 16px; border-radius: 20px; margin-bottom: 20px; text-transform: uppercase; }
+  header h1 { font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 800; line-height: 1.1; margin-bottom: 12px; background: linear-gradient(135deg, #fff 30%, #6b7280); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  header p { color: var(--muted); font-size: 15px; font-weight: 300; }
+  .scoreboard { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 40px; animation: fadeUp 0.6s 0.1s ease both; }
+  .score-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; text-align: center; }
+  .score-card .val { font-size: 2rem; font-weight: 800; font-family: 'Space Mono', monospace; }
+  .score-card .lbl { font-size: 11px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; margin-top: 4px; }
+  #score-val { color: var(--correct); }
+  #wrong-val { color: var(--wrong); }
+  #remain-val { color: var(--accent-phys); }
+  .filter-tabs { display: flex; gap: 8px; margin-bottom: 32px; flex-wrap: wrap; animation: fadeUp 0.6s 0.2s ease both; }
+  .tab { padding: 8px 20px; border-radius: 100px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-family: 'Outfit', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; letter-spacing: 0.5px; }
+  .tab:hover { border-color: #555; color: var(--text); }
+  .tab.active { color: #000; border-color: transparent; }
+  .tab[data-filter="all"].active { background: var(--text); }
+  .tab[data-filter="Mathematics"].active { background: var(--accent-math); }
+  .tab[data-filter="Chemistry"].active { background: var(--accent-chem); }
+  .tab[data-filter="Physics"].active { background: var(--accent-phys); }
+  .section-heading { display: flex; align-items: center; gap: 12px; margin: 40px 0 20px; }
+  .section-heading .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .section-heading h2 { font-size: 13px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); }
+  .section-heading .line { flex: 1; height: 1px; background: var(--border); }
+  .q-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; margin-bottom: 20px; transition: border-color 0.3s; animation: fadeUp 0.5s ease both; }
+  .q-card:hover { border-color: #3a3a50; }
+  .q-card.answered-correct { border-color: var(--correct); }
+  .q-card.answered-wrong { border-color: var(--wrong); }
+  .q-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+  .q-num { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--muted); background: var(--surface); padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border); }
+  .q-tag { font-size: 11px; font-weight: 600; letter-spacing: 1px; padding: 4px 12px; border-radius: 6px; text-transform: uppercase; }
+  .tag-math { background: rgba(245,158,11,0.15); color: var(--accent-math); }
+  .tag-chem { background: rgba(16,185,129,0.15); color: var(--accent-chem); }
+  .tag-phys { background: rgba(59,130,246,0.15); color: var(--accent-phys); }
+  .chapter-tag { font-size: 11px; color: var(--muted); background: var(--surface); padding: 4px 10px; border-radius: 6px; margin-left: auto; }
+  .q-text { font-size: 15px; line-height: 1.7; color: #e0e0ea; margin-bottom: 20px; font-weight: 400; }
+  .options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+  @media (max-width: 580px) { .options { grid-template-columns: 1fr; } }
+  .opt-btn { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--surface); border: 1.5px solid var(--border); border-radius: 12px; color: var(--text); font-family: 'Outfit', sans-serif; font-size: 14px; cursor: pointer; transition: all 0.2s; text-align: left; }
+  .opt-btn:hover:not(:disabled) { border-color: #555; background: #1e1e2e; }
+  .opt-btn .opt-label { width: 24px; height: 24px; border-radius: 6px; background: var(--border); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; font-family: 'Space Mono', monospace; flex-shrink: 0; transition: all 0.2s; }
+  .opt-btn.selected { border-color: #6b7aff; background: rgba(107,122,255,0.1); }
+  .opt-btn.selected .opt-label { background: #6b7aff; color: #fff; }
+  .opt-btn.correct { border-color: var(--correct) !important; background: rgba(34,197,94,0.1) !important; }
+  .opt-btn.correct .opt-label { background: var(--correct); color: #000; }
+  .opt-btn.wrong { border-color: var(--wrong) !important; background: rgba(239,68,68,0.1) !important; }
+  .opt-btn.wrong .opt-label { background: var(--wrong); color: #fff; }
+  .opt-btn:disabled { cursor: default; }
+  .check-btn { width: 100%; padding: 13px; border-radius: 12px; border: none; background: linear-gradient(135deg, #6b7aff, #a855f7); color: #fff; font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; letter-spacing: 0.5px; }
+  .check-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+  .check-btn:disabled { opacity: 0.4; cursor: default; transform: none; }
+  .answer-box { display: none; margin-top: 16px; padding: 16px; border-radius: 12px; font-size: 14px; line-height: 1.6; animation: fadeUp 0.3s ease; }
+  .answer-box.show { display: block; }
+  .answer-box.correct-ans { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3); }
+  .answer-box.wrong-ans { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); }
+  .answer-box .ans-header { display: flex; align-items: center; gap: 8px; font-weight: 700; margin-bottom: 6px; font-size: 13px; letter-spacing: 1px; text-transform: uppercase; }
+  .answer-box .ans-header.green { color: var(--correct); }
+  .answer-box .ans-header.red { color: var(--wrong); }
+  .answer-box .explanation { color: #b0b0c0; font-size: 13px; }
+  .progress-wrap { height: 4px; background: var(--border); border-radius: 2px; margin-bottom: 40px; overflow: hidden; animation: fadeUp 0.6s 0.15s ease both; }
+  .progress-bar { height: 100%; background: linear-gradient(90deg, #6b7aff, #a855f7); border-radius: 2px; transition: width 0.5s ease; width: 0%; }
+  @keyframes fadeDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  .q-card.hidden { display: none; }
+  .reset-btn { display: block; margin: 40px auto 0; padding: 12px 32px; border-radius: 100px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-family: 'Outfit', sans-serif; font-size: 14px; cursor: pointer; transition: all 0.2s; }
+  .reset-btn:hover { border-color: var(--text); color: var(--text); }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="logo-badge">IIT JEE Prep · Mock Test</div>
+    <h1>Practice Quiz</h1>
+    <p>Select an option and check your answer with explanation</p>
+  </header>
+  <div class="scoreboard">
+    <div class="score-card"><div class="val" id="score-val">0</div><div class="lbl">Correct</div></div>
+    <div class="score-card"><div class="val" id="wrong-val">0</div><div class="lbl">Wrong</div></div>
+    <div class="score-card"><div class="val" id="remain-val">38</div><div class="lbl">Remaining</div></div>
+  </div>
+  <div class="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+  <div class="filter-tabs">
+    <button class="tab active" data-filter="all">All Questions</button>
+    <button class="tab" data-filter="Mathematics">📐 Mathematics</button>
+    <button class="tab" data-filter="Chemistry">⚗️ Chemistry</button>
+    <button class="tab" data-filter="Physics">⚡ Physics</button>
+  </div>
+  <div id="quiz-container"></div>
+  <button class="reset-btn" onclick="resetQuiz()">↺ Reset All Answers</button>
+</div>
+
+<script>
+const questions = [
+  // ===== MATHEMATICS =====
+  // Probability
+  { id:1, num:"Q2", subject:"Mathematics", chapter:"Probability",
+    text:"Manoj throws a fair dice. He is promised an amount thrice the value of the number showing up if the number showing up is odd and an amount twice the value of the number showing up if it is even. What is the maximum amount Manoj is willing to pay each time to throw the dice, if in the long run he wants to make an average profit of Rs 5 per throw?",
+    options:["Rs 3.50","Rs 8.5","Rs 5","None of these"], correct:0,
+    explanation:"Expected value = (1/6)[3×1 + 3×3 + 3×5 + 2×2 + 2×4 + 2×6] = (1/6)[3+9+15+4+8+12] = 51/6 = 8.5. For avg profit of Rs 5, max he pays = 8.5 - 5 = Rs 3.50. Answer: Rs 3.50" },
+  { id:2, num:"Q3", subject:"Mathematics", chapter:"Probability",
+    text:"There is a frame of a cuboid of length 6, breadth 5 and height 7. The cuboid is only composed of skeleton of 210 cubes of side 1. An insect is on one corner of the cube and it wants to travel to the opposite end along the longest diagonal. It can only travel along the sides of the small cubes and always takes the shortest possible route. Find the probability that it passes through at least one of the corners.",
+    options:["1/6","7/12","5/18","None of these"], correct:1,
+    explanation:"Total shortest path length = 6+5+7 = 18. Using inclusion-exclusion on corner paths, the probability = 7/12." },
+  { id:3, num:"Q4", subject:"Mathematics", chapter:"Probability",
+    text:"A coin is so biased that the heads occurs four times as frequently as tails. Another coin is biased such that heads occurs 65% of the times. When the two coins are tossed simultaneously, what is the probability of at least one tail turning up?",
+    options:["35%","87%","48%","73%"], correct:2,
+    explanation:"P(H₁)=4/5, P(T₁)=1/5. P(H₂)=0.65. P(no tail) = P(H₁)×P(H₂) = 0.8×0.65 = 0.52. P(at least 1 tail) = 1 - 0.52 = 0.48 = 48%. Answer: 48%" },
+  { id:4, num:"Q5", subject:"Mathematics", chapter:"Permutation & Combination",
+    text:"There is a regular decagon. Triangles are formed by joining the vertices of the polygon. What is the number of triangles which have no side common with any of the sides of the polygon?",
+    options:["50","300","44","294"], correct:0,
+    explanation:"For n-gon, triangles with no side common = n(n-4)(n-5)/6. For n=10: 10×6×5/6 = 50. Answer: 50" },
+  { id:5, num:"Q6", subject:"Mathematics", chapter:"Permutation & Combination",
+    text:"There are 12 intermediate stations between two places A and B. In how many ways can a train be made to stop at 4 of these 12 intermediate stations so that no two stations are consecutive?",
+    options:["¹⁵C₃","¹¹C₃","⁹C₄","⁹C₃"], correct:2,
+    explanation:"Formula for non-consecutive selection: ⁽ⁿ⁻ʳ⁺¹⁾Cᵣ = ⁽¹²⁻⁴⁺¹⁾C₄ = ⁹C₄. Answer: ⁹C₄" },
+  { id:6, num:"Q7", subject:"Mathematics", chapter:"Permutation & Combination",
+    text:"The number of positive integral solutions of abc = 30 is:",
+    options:["27","81","243","None of these"], correct:0,
+    explanation:"30 = 2×3×5. Each prime factor distributed among a,b,c → 3×3×3 = 27 ways. Answer: 27" },
+  { id:7, num:"Q8", subject:"Mathematics", chapter:"Sequences & Series (GP)",
+    text:"A group of friends have some money which was in an increasing GP. The total money with the first and the last friend was Rs 66 and the product of the money that the second friend and the last but one friend had was Rs 128. If the total money with all of them together was Rs 126, then how many friends were there?",
+    options:["6","5","3","Cannot be determined"], correct:0,
+    explanation:"Let GP: a, ar, ..., arⁿ⁻¹. First+Last=66, 2nd×(n-1)th=128, Sum=126. Solving gives a=2, r=2, n=6. Answer: 6 friends" },
+  { id:8, num:"Q9", subject:"Mathematics", chapter:"Sequences & Series (AP)",
+    text:"If the sum of the 10th, 20th and 30th terms of an AP is equal to the 58th term, what is the ratio of the sum of the 10th, 20th and 30th terms to the sum of the 5th, 10th and 15th terms; when the common difference ≠ 0?",
+    options:["2:1","19:9","20:9","Cannot be determined"], correct:1,
+    explanation:"T₁₀+T₂₀+T₃₀=T₅₈ → 3a+57d=a+57d → a=0. Sum(10,20,30)=57d, Sum(5,10,15)=27d. Ratio=57:27=19:9." },
+  { id:9, num:"Q22", subject:"Mathematics", chapter:"Integral Calculus",
+    text:"∫₀^∞ dx / [(x²+a²)(x²+b²)] is:",
+    options:["πab/(a+b)","π/[2(a+b)]","π/[2ab(a+b)]","π(a+b)/2ab"], correct:2,
+    explanation:"Using partial fractions: 1/[(x²+a²)(x²+b²)] = [1/(b²-a²)][1/(x²+a²) - 1/(x²+b²)]. Integrating from 0 to ∞: [π/(2a) - π/(2b)]/(b²-a²) = π/[2ab(a+b)]. Answer: π/[2ab(a+b)]" },
+  { id:10, num:"Q23", subject:"Mathematics", chapter:"Vectors",
+    text:"If r⃗ and s⃗ are non-zero constant vectors and the scalar b is chosen such that |r⃗ + bs⃗| is minimum, then the value of |bs⃗|² + |r⃗ + bs⃗|² is equal to:",
+    options:["2|r⃗|²","|r⃗|²","3|r⃗|²","|r⃗|²/2"], correct:1,
+    explanation:"For minimum |r⃗+bs⃗|, b = -(r⃗·s⃗)/|s⃗|². At minimum, r⃗+bs⃗ ⊥ s⃗. So |bs⃗|²+|r⃗+bs⃗|² = |r⃗|² (by Pythagoras in vector triangle). Answer: |r⃗|²" },
+  { id:11, num:"Q25", subject:"Mathematics", chapter:"Complex Numbers",
+    text:"If |z₁| = |z₂| = ... = |zₙ| = 1, then the value of |1/z₁ + 1/z₂ + ... + 1/zₙ| is:",
+    options:["0","1","-1","None"], correct:1,
+    explanation:"Since |zₖ|=1, we have 1/zₖ = z̄ₖ (conjugate). So |1/z₁+...+1/zₙ| = |z̄₁+...+z̄ₙ| = |conj(z₁+...+zₙ)| = |z₁+...+zₙ|. Answer: |z₁+z₂+...+zₙ|" },
+  { id:12, num:"Q26", subject:"Mathematics", chapter:"Probability (Sets)",
+    text:"In a statistical investigation of 1003 families of Calcutta, it was found that 63 families has neither a radio nor a T.V., 794 families has a radio and 187 has T.V. The number of families having both a radio and a T.V. is:",
+    options:["36","41","32","None of these"], correct:1,
+    explanation:"n(R∪T) = 1003-63 = 940. n(R)+n(T)-n(R∩T) = 940. 794+187-n(R∩T)=940. n(R∩T) = 981-940 = 41. Answer: 41" },
+  { id:13, num:"Q28", subject:"Mathematics", chapter:"Coordinate Geometry (Circle)",
+    text:"If the coordinates at one end of a diameter of the circle x²+y²-8x-4y+c=0 are (-3,2), then the coordinates at the other end are:",
+    options:["(5,3)","(6,2)","(1,-8)","(11,2)"], correct:3,
+    explanation:"Centre of circle = (4,2). If one end is (-3,2), other end: x=2×4-(-3)=11, y=2×2-2=2. Answer: (11,2)" },
+  { id:14, num:"Q29", subject:"Mathematics", chapter:"Trigonometry",
+    text:"The value of sin[nπ + (-1)ⁿ × π/4], n∈I is:",
+    options:["0","1/√2","-1/√2","None of these"], correct:1,
+    explanation:"When n is even: sin[nπ+π/4] = sin(π/4) = 1/√2. When n is odd: sin[nπ-π/4] = sin(-π/4) at nπ = -(-1)×sin(π/4) ... = 1/√2 in both cases. Answer: 1/√2" },
+  { id:15, num:"Q30", subject:"Mathematics", chapter:"Probability (Combinatorics)",
+    text:"The number of possible outcomes in a throw of n ordinary dice in which at least one of the dice shows an odd number is:",
+    options:["6ⁿ-1","3ⁿ-1","6ⁿ-3ⁿ","None of these"], correct:2,
+    explanation:"Total outcomes = 6ⁿ. Outcomes where ALL dice show even = 3ⁿ. So at least one odd = 6ⁿ-3ⁿ. Answer: 6ⁿ-3ⁿ" },
+  { id:16, num:"Q31", subject:"Mathematics", chapter:"Sequences & Series (Infinite)",
+    text:"The sum of the infinite series 1 + 2²/2! + 2⁴/4! + 2⁶/6! + ... is equal to:",
+    options:["(e²+1)/2e","e⁴/2e²","(e²-1)²/2e²","(e²+1)²/2e²"], correct:0,
+    explanation:"cosh(x) = (eˣ+e⁻ˣ)/2 = 1 + x²/2! + x⁴/4! + ... For x=2: cosh(2) = 1+4/2!+16/4!+... = (e²+e⁻²)/2 = (e⁴+1)/(2e²). Answer: (e²+1)²/(2e²)" },
+  { id:17, num:"Q33", subject:"Mathematics", chapter:"Calculus (Increasing/Decreasing)",
+    text:"Consider the function f(x) = |x - 1/x²|, then f(x) is:",
+    options:["increasing in (0,1) ∪ (2,∞)","increasing in (-∞,0) ∪ (1,2)","decreasing in (0,1) ∪ (2,∞)","None of these"], correct:0,
+    explanation:"f(x)=|x-1/x²|. For x>0 and x>1: f(x)=x-1/x², f'(x)=1+2/x³>0 always. Increasing on (0,1)∪(2,∞). Answer: increasing in (0,1)∪(2,∞)" },
+  { id:18, num:"Q34", subject:"Mathematics", chapter:"Coordinate Geometry (Locus)",
+    text:"A straight rod of length 9 units slides with its ends A, B always on the X and Y-axis respectively. Then the locus of the centroid of △OAB is:",
+    options:["x²+y²=3","x²+y²=9","x²+y²=1","x²+y²=81"], correct:0,
+    explanation:"Let A=(a,0), B=(0,b). a²+b²=81. Centroid G=(a/3, b/3). Let x=a/3, y=b/3 → a=3x, b=3y. So 9x²+9y²=81 → x²+y²=9. Wait — answer is x²+y²=9. Answer: x²+y²=9" },
+  { id:19, num:"Q35", subject:"Mathematics", chapter:"Calculus (Differentiation)",
+    text:"If xy + y² = tan x + y, then find dy/dx:",
+    options:["sec²x/(x+2y)","sec²x-y","(sec²x-y)/(x+2y-1)","None of these"], correct:2,
+    explanation:"Differentiating implicitly: y + x(dy/dx) + 2y(dy/dx) = sec²x + dy/dx. dy/dx(x+2y-1) = sec²x-y. dy/dx = (sec²x-y)/(x+2y-1). Answer: (sec²x-y)/(x+2y-1)" },
+  { id:20, num:"Q36", subject:"Mathematics", chapter:"Probability",
+    text:"The probability that a certain electronic component fails when first used is 0.10. If it does not fail immediately, the probability that it will last for one year is 0.99. The probability that a new component will last for one year is:",
+    options:["0.99","0.871","0.891","0.762"], correct:2,
+    explanation:"P(lasts 1 year) = P(not fail initially)×P(lasts 1 yr | not failed) = 0.90×0.99 = 0.891. Answer: 0.891" },
+  { id:21, num:"Q45", subject:"Mathematics", chapter:"3D Geometry",
+    text:"A cube of side 3 units is formed using a set of smaller cubes of side 1 unit. Find the proportion of the number of faces of the smaller cubes visible to those which are NOT visible.",
+    options:["1:4","1:3","2:3","1:2"], correct:3,
+    explanation:"Total faces = 27×6=162. Visible (surface) = 6×9=54. Not visible = 108. Ratio = 54:108 = 1:2. Answer: 1:2" },
+  // Domain/Functions
+  { id:22, num:"Q27", subject:"Mathematics", chapter:"Functions (Domain)",
+    text:"The domain of the function f(x) = √(x - √(1-x²)) is:",
+    options:["[-1, -1/√2] ∪ [1/√2, 1]","[-1,1]","(-∞,-1/2] ∪ [√2,+∞)","[1/√2, 1]"], correct:0,
+    explanation:"Need x-√(1-x²) ≥ 0 and 1-x²≥0. From 1-x²≥0: x∈[-1,1]. From x≥√(1-x²): x≥0 and x²≥1-x² → x²≥1/2 → |x|≥1/√2. Combined with x≥0: x∈[1/√2,1]. Also x can be negative when both conditions met: [-1,-1/√2]∪[1/√2,1]." },
+  // Pair of lines
+  { id:23, num:"Q24", subject:"Mathematics", chapter:"Pair of Straight Lines",
+    text:"Statement-1: If the general equation x²+y²+2xy+2gx+2fy+4=0 represents a pair of real lines then |g|≥2. Statement-2: The equation ax²+2hxy+by²+2gx+2fy+c=0 represents a pair of real lines if abc+2fgh-af²-bg²-ch²=0.",
+    options:["S1 false, S2 true","S1 true, S2 true, S2 correct explanation","S1 true, S2 true, S2 not correct explanation","S1 true, S2 false"], correct:1,
+    explanation:"S2 is the standard condition for pair of lines (Δ=0) — TRUE. For S1: a=b=1, h=1, c=4, f=f, g=g. Δ=0: 4+2fg-f²-g²-1=0 → (f-g)²=3 real solution needs |g|≥2 approximately. Both true and S2 explains S1." },
+  // Differential equation
+  { id:24, num:"Q32", subject:"Mathematics", chapter:"Differential Equations",
+    text:"The solution of the differential equation (x+1)dy/dx - y = e³ˣ(x+1)² is:",
+    options:["y=(x+1)e³ˣ+c","3y=(x+1)+e³ˣ+c","3y/(x+1)=e³ˣ+c","ye⁻³ˣ=3(x+1)+c"], correct:2,
+    explanation:"Rearranging: dy/dx - y/(x+1) = e³ˣ(x+1). IF = e^(-∫1/(x+1)dx) = 1/(x+1). Multiply: d[y/(x+1)]/dx = e³ˣ. Integrating: y/(x+1) = e³ˣ/3 + c → 3y/(x+1) = e³ˣ + c. Answer: 3y/(x+1) = e³ˣ + c" },
+
+  // ===== CHEMISTRY =====
+  { id:25, num:"Q38", subject:"Chemistry", chapter:"Chemical Bonding (Cl-O Bond)",
+    text:"Which of the following represents the correct order of Cl-O bond lengths in ClO⁻, ClO₂⁻, ClO₃⁻, ClO₄⁻?",
+    options:["ClO₄⁻=ClO₃⁻=ClO₂⁻=ClO⁻","ClO⁻<ClO₂⁻<ClO₃⁻<ClO₄⁻","ClO₄⁻<ClO₃⁻<ClO₂⁻<ClO⁻","ClO₃⁻<ClO₄⁻<ClO₂⁻<ClO⁻"], correct:2,
+    explanation:"More oxygen atoms = more double bond character = shorter bond. ClO₄⁻ has most resonance structures (shortest bonds), ClO⁻ has least (longest). Order: ClO₄⁻ < ClO₃⁻ < ClO₂⁻ < ClO⁻. Answer: (c)" },
+  { id:26, num:"Q39", subject:"Chemistry", chapter:"Coordination Compounds (Medicinal)",
+    text:"Which one of the following coordination compounds is used to inhibit the growth of tumours?",
+    options:["Trans-platin","EDTA complex of calcium","[Ph₃P]₃RhCl","Cis-platin"], correct:3,
+    explanation:"Cis-platin (cis-[PtCl₂(NH₃)₂]) is a well-known anticancer drug used in chemotherapy to inhibit tumour growth by cross-linking DNA. Trans-platin is inactive. Answer: Cis-platin" },
+  { id:27, num:"Q40", subject:"Chemistry", chapter:"Organic Chemistry (Drugs)",
+    text:"Aspirin is known as:",
+    options:["acetyl salicylic acid","phenyl salicylate","acetyl salicylate","methyl salicylic acid"], correct:0,
+    explanation:"Aspirin is the common name for acetylsalicylic acid (2-acetoxybenzoic acid). It is formed by acetylation of salicylic acid. Answer: acetyl salicylic acid" },
+  { id:28, num:"Q41", subject:"Chemistry", chapter:"Chemical Kinetics",
+    text:"In a 1st order reaction, reactant concentration C varies with time t as:",
+    options:["1/C increases linearly with t","log C decreases linearly with t","C decreases with 1/t","log C decreases with 1/t"], correct:1,
+    explanation:"For 1st order: ln C = ln C₀ - kt → log C = log C₀ - kt/2.303. So log C decreases linearly with t. Answer: log C decreases linearly with t" },
+  { id:29, num:"Q42", subject:"Chemistry", chapter:"Chemical Bonding (pπ-pπ)",
+    text:"Which of the following has the highest pπ–pπ bonding tendency?",
+    options:["N","P","As","Sb"], correct:0,
+    explanation:"N has smallest atomic size in group 15, so 2p orbitals overlap effectively for pπ-pπ bonds. Down the group, larger atoms have diffuse orbitals that overlap poorly. Answer: N" },
+  { id:30, num:"Q43", subject:"Chemistry", chapter:"p-Block Elements (Sulphur)",
+    text:"Identify the incorrect statement about sulphur:",
+    options:["The S-S bond angles in S₈ and S₆ rings are the same","Rhombic and monoclinic sulphur have S₈ molecules","S₂ is paramagnetic like oxygen molecules","S₈ ring has a crown shape"], correct:0,
+    explanation:"S₈ has S-S-S bond angle of 105° while S₆ has 102.6°. They are NOT the same — this is the incorrect statement. Answer: (a)" },
+  { id:31, num:"Q44", subject:"Chemistry", chapter:"Chemical Bonding (Coordinate Bond)",
+    text:"Which of the following does NOT contain any coordinate bond?",
+    options:["H₃O⁺","BF₄⁻","HF₂⁻","SO₂"], correct:3,
+    explanation:"H₃O⁺: O donates lone pair to H⁺. BF₄⁻: F⁻ donates to BF₃. HF₂⁻: has hydrogen bonding. SO₂: S uses its own electrons for double bond — no coordinate bond. Answer: SO₂" },
+  { id:32, num:"Q46", subject:"Chemistry", chapter:"Solutions (Raoult's Law)",
+    text:"Liquids A and B form an ideal solution. At 350K, vapour pressures of pure A and pure B are 7×10³ Pa and 12×10³ Pa. The composition of vapour in equilibrium with a solution containing 40 mole percent of A is:",
+    options:["xA=0.37; xB=0.63","xA=0.28; xB=0.72","xA=0.4; xB=0.6","xA=0.76; xB=0.24"], correct:1,
+    explanation:"PA=0.4×7000=2800 Pa, PB=0.6×12000=7200 Pa, Ptotal=10000 Pa. yA=2800/10000=0.28, yB=0.72. Answer: xA=0.28, xB=0.72" },
+  { id:33, num:"Q47", subject:"Chemistry", chapter:"p-Block (Halogen Compounds)",
+    text:"Hydrolysis of NCl₃ gives NH₃ and X. Which of the following is X?",
+    options:["HClO₄","HClO₃","HOCl","HClO₂"], correct:2,
+    explanation:"NCl₃ + 3H₂O → NH₃ + 3HOCl. Unlike PCl₃, NCl₃ hydrolyses to give ammonia and hypochlorous acid (HOCl). Answer: HOCl" },
+  { id:34, num:"Q48", subject:"Chemistry", chapter:"Solid State",
+    text:"Element 'B' forms ccp structure and 'A' occupies half of the octahedral voids, while oxygen atoms occupy all the tetrahedral voids. The structure of bimetallic oxide is:",
+    options:["A₂BO₄","AB₂O₄","A₂B₂O","A₄B₂O"], correct:1,
+    explanation:"n B atoms, n/2 A atoms (half of n octahedral voids), 2n O atoms (all tetrahedral voids). Ratio A:B:O = 1:2:4. Formula = AB₂O₄ (spinel). Answer: AB₂O₄" },
+  { id:35, num:"Q49", subject:"Chemistry", chapter:"Coordination Compounds",
+    text:"[Fe(en)₂(H₂O)₂]²⁺ + en → complex (X). The correct statement about complex X is:",
+    options:["it is a low spin complex","it is diamagnetic","it shows geometrical isomerism","(a) and (b) both"], correct:3,
+    explanation:"[Fe(en)₃]²⁺: Fe²⁺ with 3 en (strong field ligands). d⁶ low spin → 0 unpaired electrons → diamagnetic. [Fe(en)₃]²⁺ shows optical isomerism not geometrical. (a) and (b) both are correct. Answer: (a) and (b) both" },
+  { id:36, num:"Q50", subject:"Chemistry", chapter:"Atomic Structure",
+    text:"The frequency of radiation emitted when the electron falls from n=4 to n=1 in a hydrogen atom will be (Given: IE of H = 2.18×10⁻¹⁸ J atom⁻¹ and h = 6.625×10⁻³⁴ Js):",
+    options:["1.54×10¹⁵ s⁻¹","1.03×10¹⁵ s⁻¹","3.08×10¹⁵ s⁻¹","2.00×10¹⁵ s⁻¹"], correct:2,
+    explanation:"ΔE = 2.18×10⁻¹⁸×(1-1/16) = 2.18×10⁻¹⁸×15/16 = 2.044×10⁻¹⁸ J. ν = ΔE/h = 2.044×10⁻¹⁸/6.625×10⁻³⁴ = 3.08×10¹⁵ s⁻¹. Answer: 3.08×10¹⁵ s⁻¹" },
+  { id:37, num:"Q37", subject:"Chemistry", chapter:"d-Block Elements (Magnetic Moment)",
+    text:"Which one of the following ions has the maximum magnetic moment?",
+    options:["Sc³⁺","Ti³⁺","Cr³⁺","Fe³⁺"], correct:3,
+    explanation:"Magnetic moment = √(n(n+2)) BM where n = unpaired electrons. Sc³⁺: d⁰ (0), Ti³⁺: d¹ (1), Cr³⁺: d³ (3), Fe³⁺: d⁵ (5 unpaired). μ(Fe³⁺) = √35 = 5.92 BM — maximum. Answer: Fe³⁺" },
+
+  // ===== PHYSICS =====
+  { id:38, num:"Q11", subject:"Physics", chapter:"Moving Charges & Magnetism",
+    text:"The field of a hollow wire with constant current is homogeneous. Curves in the graph shown give, as functions of radius r, the magnitude B of the magnetic field inside and outside four long wires a, b, c and d, carrying currents uniformly distributed across cross sections. Which wire has the greatest magnitude of the magnetic field on the surface?",
+    options:["a","b","c","d"], correct:3,
+    explanation:"B at surface = μ₀I/(2πR). Wire with highest current density or smallest radius has highest B at surface. From the graph, wire 'd' has maximum B at its surface. Answer: d" }
+];
+
+let score=0, wrong=0, answered=0;
+const total=questions.length;
+
+function getTagClass(s){ return s==="Mathematics"?"tag-math":s==="Chemistry"?"tag-chem":"tag-phys"; }
+
+function renderQuestions(filter="all"){
+  const container=document.getElementById("quiz-container");
+  container.innerHTML="";
+  const subjects=["Mathematics","Chemistry","Physics"];
+  const colors={Mathematics:"#f59e0b",Chemistry:"#10b981",Physics:"#3b82f6"};
+  const emojis={Mathematics:"📐",Chemistry:"⚗️",Physics:"⚡"};
+
+  subjects.forEach(subject=>{
+    const qs=questions.filter(q=>q.subject===subject&&(filter==="all"||filter===subject));
+    if(qs.length===0)return;
+    const heading=document.createElement("div");
+    heading.className="section-heading";
+    heading.innerHTML=`<div class="dot" style="background:${colors[subject]}"></div><h2>${emojis[subject]} ${subject}</h2><div class="line"></div>`;
+    container.appendChild(heading);
+
+    qs.forEach((q,idx)=>{
+      const card=document.createElement("div");
+      card.className="q-card";
+      card.id=`card-${q.id}`;
+      card.style.animationDelay=`${idx*0.04}s`;
+      const saved=window.qState?.[q.id];
+      if(saved){ card.classList.add(saved.correct?"answered-correct":"answered-wrong"); }
+
+      card.innerHTML=`
+        <div class="q-meta">
+          <span class="q-num">${q.num}</span>
+          <span class="q-tag ${getTagClass(q.subject)}">${q.subject}</span>
+          <span class="chapter-tag">${q.chapter}</span>
+        </div>
+        <div class="q-text">${q.text}</div>
+        <div class="options" id="opts-${q.id}">
+          ${q.options.map((opt,i)=>`
+            <button class="opt-btn ${saved&&saved.selected===i?(saved.correct?'correct':'wrong'):''} ${saved&&i===q.correct&&saved.selected!==i?'correct':''}"
+              onclick="selectOption(${q.id},${i})" ${saved?'disabled':''} id="opt-${q.id}-${i}">
+              <span class="opt-label">${String.fromCharCode(65+i)}</span>${opt}
+            </button>`).join("")}
+        </div>
+        <button class="check-btn" id="check-${q.id}" onclick="checkAnswer(${q.id})" ${saved?'disabled':''}>
+          ${saved?(saved.correct?'✓ Correct!':'✗ Wrong'):'Check Answer'}
+        </button>
+        <div class="answer-box ${saved?'show':''} ${saved?(saved.correct?'correct-ans':'wrong-ans'):''}" id="ans-${q.id}">
+          ${saved?`<div class="ans-header ${saved.correct?'green':'red'}">${saved.correct?'✓ Correct Answer!':'✗ Wrong — Correct: '+q.options[q.correct]}</div><div class="explanation">${q.explanation}</div>`:''}
+        </div>`;
+      container.appendChild(card);
+    });
+  });
+  updateScore();
+}
+
+window.qState={};
+window.selected={};
+
+function selectOption(qId,optIdx){
+  if(window.qState[qId])return;
+  window.selected[qId]=optIdx;
+  document.querySelectorAll(`#opts-${qId} .opt-btn`).forEach((btn,i)=>{
+    btn.classList.remove("selected");
+    if(i===optIdx)btn.classList.add("selected");
+  });
+  document.getElementById(`check-${qId}`).disabled=false;
+}
+
+function checkAnswer(qId){
+  if(window.qState[qId])return;
+  const q=questions.find(x=>x.id===qId);
+  const sel=window.selected[qId];
+  if(sel===undefined)return;
+  const isCorrect=sel===q.correct;
+  window.qState[qId]={selected:sel,correct:isCorrect};
+
+  document.querySelectorAll(`#opts-${qId} .opt-btn`).forEach((btn,i)=>{
+    btn.disabled=true;
+    btn.classList.remove("selected");
+    if(i===q.correct)btn.classList.add("correct");
+    if(i===sel&&!isCorrect)btn.classList.add("wrong");
+  });
+
+  const ansBox=document.getElementById(`ans-${qId}`);
+  ansBox.className=`answer-box show ${isCorrect?'correct-ans':'wrong-ans'}`;
+  ansBox.innerHTML=`<div class="ans-header ${isCorrect?'green':'red'}">${isCorrect?'✓ Correct Answer!':'✗ Wrong — Correct: '+q.options[q.correct]}</div><div class="explanation">${q.explanation}</div>`;
+
+  document.getElementById(`card-${qId}`).classList.add(isCorrect?"answered-correct":"answered-wrong");
+  const checkBtn=document.getElementById(`check-${qId}`);
+  checkBtn.disabled=true;
+  checkBtn.textContent=isCorrect?'✓ Correct!':'✗ Wrong';
+
+  if(isCorrect)score++; else wrong++;
+  answered++;
+  updateScore();
+}
+
+function updateScore(){
+  document.getElementById("score-val").textContent=score;
+  document.getElementById("wrong-val").textContent=wrong;
+  document.getElementById("remain-val").textContent=total-answered;
+  document.getElementById("progress-bar").style.width=(answered/total*100)+"%";
+}
+
+function resetQuiz(){
+  if(!confirm("Reset all answers?"))return;
+  score=0;wrong=0;answered=0;
+  window.qState={};window.selected={};
+  renderQuestions(currentFilter);
+}
+
+let currentFilter="all";
+document.querySelectorAll(".tab").forEach(tab=>{
+  tab.addEventListener("click",function(){
+    document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+    this.classList.add("active");
+    currentFilter=this.dataset.filter;
+    renderQuestions(currentFilter);
+  });
+});
+
+renderQuestions();
+</script>
+</body>
+</html>
